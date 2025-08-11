@@ -1,0 +1,29 @@
+{
+  "messageVersion": "1.0",
+  "invocationSource": "FulfillmentCodeHook",
+  "inputMode": "Text",
+  "sessionId": "localTest1",
+  "inputTranscript": "Quiero reservar frenos mañana a las 14:00",
+  "bot": {
+    "id": "YOUR_BOT_ID",
+    "name": "TallerMecanicoBot",
+    "localeId": "es_419",
+    "version": "DRAFT",
+    "aliasId": "YOUR_ALIAS_ID",
+    "aliasName": "prod"
+  },
+  "sessionState": {
+    "intent": {
+      "name": "MakeBooking",
+      "slots": {
+        "Service": { "value": { "interpretedValue": "frenos" } },
+        "Date": { "value": { "interpretedValue": "2025-08-15" } },
+        "Time": { "value": { "interpretedValue": "14:00" } },
+        "Name": { "value": { "interpretedValue": "Juan" } },
+        "Phone": { "value": { "interpretedValue": "987654321" } },
+        "Plate": { "value": { "interpretedValue": "XYZ987" } }
+      },
+      "state": "ReadyForFulfillment"
+    }
+  }
+}
