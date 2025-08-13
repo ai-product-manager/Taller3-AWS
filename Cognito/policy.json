@@ -1,0 +1,17 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowRecognizeTextOnSpecificAlias",
+            "Effect": "Allow",
+            "Action": "lex:RecognizeText",
+            "Resource": "arn:aws:lex:us-east-1:654654520205:bot-alias/DCOKIVRC7V/HO9WEHV6MC"
+        },
+        {
+            "Sid": "AllowPollyTTS",
+            "Effect": "Allow",
+            "Action": "polly:SynthesizeSpeech",
+            "Resource": "*"
+        }
+    ]
+}

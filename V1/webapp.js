@@ -106,7 +106,7 @@ async function synthesizeAndPlay(text) {
   // Intentar con neural
   const base = { Text: text, OutputFormat: "mp3", VoiceId: VOICE_ID };
   try {
-    const data = await polly.synthesizeSpeech({ ...base, Engine: "neural" }).promise(); 
+    const data = await polly.synthesizeSpeech({ ...base, Engine: "generative" }).promise(); 
     return playAudio(data.AudioStream);
   } catch (e) {
     console.warn("Neural no disponible, usando estándar:", e.message);
