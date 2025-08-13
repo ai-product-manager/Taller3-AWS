@@ -6,6 +6,7 @@ const IDENTITY_POOL_ID = "us-east-1:4c3eabb2-8fa4-4973-ad0e-f6066965290a"; // Id
 const BOT_ID = "DCOKIVRC7V";                       // Bot ID (~10 caracteres)
 const BOT_ALIAS_ID = "HO9WEHV6MC";                 // Alias ID (como se ve en consola)
 const LOCALE_ID = "es_419";                        // Español LatAM (coincide con tu bot)
+const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
 /***************************************************************/
 
 const chat = document.getElementById("chat");
@@ -70,7 +71,7 @@ async function speak(text) {
   const p = {
     Text: text,
     OutputFormat: "mp3",
-    VoiceId: "Mia",
+    VoiceId: VOICE_ID,
     Engine: "neural"            // asegúrate de que la voz soporte neural en tu región
   };
   const data = await polly.synthesizeSpeech(p).promise();  

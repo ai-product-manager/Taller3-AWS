@@ -1,0 +1,181 @@
+/****************************************************
+ * Reemplaza los valores de CONFIG y abre index-plain.html
+ * en un servidor local (no file://). Ej: npx serve
+ ****************************************************/
+
+// /*********** CONFIG — REEMPLAZA ESTOS VALORES ***********/
+// const REGION = "us-east-1";                      // Tu región AWS
+// const IDENTITY_POOL_ID = "us-east-1:xxxx-....";  // Cognito Identity Pool (guest)
+// const BOT_ID = "XXXXXXXXXX";                     // Lex V2 Bot ID
+// const BOT_ALIAS_ID = "YYYYYYYYYY";               // Lex V2 Bot Alias ID (publicado)
+// const LOCALE_ID = "es_419";                      // Locale del alias (Español LatAm)
+// const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
+// /*******************************************************/
+
+/*********** CONFIGURACIÓN — REEMPLAZA ESTOS VALORES ***********/
+const REGION = "us-east-1";                        // Reemplaza con tu región
+const IDENTITY_POOL_ID = "us-east-1:4c3eabb2-8fa4-4973-ad0e-f6066965290a"; // Identity Pool ID (acceso guest)
+const BOT_ID = "DCOKIVRC7V";                       // Bot ID (~10 caracteres)
+const BOT_ALIAS_ID = "HO9WEHV6MC";                 // Alias ID (como se ve en consola)
+const LOCALE_ID = "es_419";                        // Español LatAM (coincide con tu bot)
+const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
+/*******************************************************/
+
+const $log = document.getElementById("log");
+const $inp = document.getElementById("userInput");
+const $send = document.getElementById("sendBtn");
+const $reset = document.getElementById("resetBtn");
+
+/** Utilidad: imprime texto simple en el "log" */
+function log(line) {
+  const div = document.createElement("div");
+  div.textContent = line;
+  $log.appendChild(div);
+  $log.scrollTop = $log.scrollHeight;
+}
+
+/** 1) CREDENCIALES EN NAVEGADOR (recomendado por AWS)
+ * ---------------------------------------------------
+ * Se usan credenciales temporales vía Cognito Identity Pools
+ * (guest access) — sin exponer llaves en el browser.
+ *
+ * Doc: AWS SDK v2 en navegador + CognitoIdentityCredentials. 
+ * - Using Cognito in browser: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/loading-browser-credentials-cognito.html
+ * - Getting started in browser: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/getting-started-browser.html
+ */
+AWS.config.region = REGION;
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+  IdentityPoolId: IDENTITY_POOL_ID
+});
+
+// (Opcional) Log detallado de llamadas del SDK a la consola.
+// Útil para ver params/errores de cada request.
+AWS.config.logger = console; // :contentReference[oaicite:2]{index=2}
+
+/** 2) CLIENTES: Lex Runtime V2 + Polly */
+const lex = new AWS.LexRuntimeV2({ region: REGION });
+const polly = new AWS.Polly({ region: REGION });
+
+/** 3) SESIONES EN LEX
+ * --------------------
+ * Mantener el mismo sessionId entre mensajes hace que el bot
+ * "recuerde" slots/estado hasta que expire el timeout (por defecto 5 min,
+ * configurable hasta 24h en el bot).
+ * - Managing sessions: https://docs.aws.amazon.com/lexv2/latest/dg/managing-sessions.html
+ * - Session timeout: https://docs.aws.amazon.com/lexv2/latest/dg/context-mgmt-session-timeout.html
+ */
+const SESSION_KEY = "lexSessionIdPlain";
+let sessionId = localStorage.getItem(SESSION_KEY);
+if (!sessionId) {
+  sessionId = crypto.randomUUID();
+  localStorage.setItem(SESSION_KEY, sessionId);
+}
+log("Session ID: " + sessionId);
+
+/** Helper: renovar credenciales (tras cambios de IAM/políticas) */
+function refreshCreds() {
+  return new Promise((res, rej) =>
+    AWS.config.credentials.refresh(err => (err ? rej(err) : res()))
+  );
+}
+
+/** 4) ENVIAR TEXTO A LEX (RecognizeText)
+ * ---------------------------------------
+ * API runtime principal para bots de texto en Lex V2.
+ * Devuelve messages[] (texto a mostrar al usuario).
+ * Doc API: https://docs.aws.amazon.com/lexv2/latest/APIReference/API_runtime_RecognizeText.html
+ */
+async function sendToLex(text) {
+  const params = {
+    botAliasId: BOT_ALIAS_ID,
+    botId: BOT_ID,
+    localeId: LOCALE_ID,
+    sessionId,   // MISMO sessionId en cada turno
+    text
+  };
+  const resp = await lex.recognizeText(params).promise(); // :contentReference[oaicite:3]{index=3}
+  const msgs = (resp.messages || []).map(m => m.content).join(" ");
+  return msgs || "(Sin respuesta del bot)";
+}
+
+/** 5) SINTETIZAR VOZ CON POLLY (SynthesizeSpeech)
+ * ------------------------------------------------
+ * Convierte el texto en audio MP3 y lo reproduce.
+ * - Si la voz soporta Engine "neural" en tu región, úsalo (mejor calidad).
+ * - Si falla "neural", caemos a "standard".
+ * Doc API voice/engine: https://docs.aws.amazon.com/polly/latest/dg/API_SynthesizeSpeech.html
+ */
+async function synthesizeAndPlay(text) {
+  // Intentar con neural
+  const base = { Text: text, OutputFormat: "mp3", VoiceId: VOICE_ID };
+  try {
+    const data = await polly.synthesizeSpeech({ ...base, Engine: "neural" }).promise(); // :contentReference[oaicite:4]{index=4}
+    return playAudio(data.AudioStream);
+  } catch (e) {
+    console.warn("Neural no disponible, usando estándar:", e.message);
+    const data = await polly.synthesizeSpeech(base).promise();
+    return playAudio(data.AudioStream);
+  }
+}
+
+/** 6) Reproduce el AudioStream (ArrayBuffer) */
+function playAudio(audioStream) {
+  if (!audioStream) return;
+  const blob = new Blob([audioStream], { type: "audio/mpeg" });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  return audio.play();
+}
+
+/** 7) Flujo al pulsar Enviar */
+$send.addEventListener("click", async () => {
+  const text = $inp.value.trim();
+  if (!text) return;
+
+  log("Tú: " + text);
+  $send.disabled = true;
+  $inp.disabled = true;
+  try {
+    // Asegura credenciales activas antes del request
+    await refreshCreds(); // :contentReference[oaicite:5]{index=5}
+
+    // 1) Texto -> Lex
+    const reply = await sendToLex(text);
+
+    // 2) Mostrar respuesta
+    log("Bot: " + reply);
+
+    // 3) Texto -> Voz (Polly)
+    await synthesizeAndPlay(reply);
+  } catch (e) {
+    console.error(e);
+    log("⚠️ Error: " + (e.message || "Fallo Lex/Polly"));
+  } finally {
+    $send.disabled = false;
+    $inp.disabled = false;
+    $inp.value = "";
+    $inp.focus();
+  }
+});
+
+/** 8) Reiniciar la sesión (nuevo sessionId) */
+$reset.addEventListener("click", () => {
+  AWS.config.credentials.clearCachedId?.(); // opcional: fuerza nuevas credenciales
+  localStorage.removeItem(SESSION_KEY);
+  sessionId = crypto.randomUUID();
+  localStorage.setItem(SESSION_KEY, sessionId);
+  log("🔄 Nueva sesión: " + sessionId);
+});
+
+// Enfoca la caja de texto al cargar
+$inp.focus();
+
+/** (Opcional) DEPURACIÓN DE SESIÓN:
+ * Puedes consultar el estado (slots/atributos) con GetSession:
+ * https://docs.aws.amazon.com/lexv2/latest/dg/managing-sessions.html
+ *
+ * async function debugGetSession() {
+ *   const s = await lex.getSession({ botAliasId: BOT_ALIAS_ID, botId: BOT_ID, localeId: LOCALE_ID, sessionId }).promise();
+ *   console.log("Lex session:", s.sessionState);
+ * }
+ */
