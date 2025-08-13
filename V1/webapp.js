@@ -22,7 +22,7 @@ const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternati
 /*******************************************************/
 
 const $log = document.getElementById("log");
-const $inp = document.getElementById("userInput");
+const $input = document.getElementById("userInput");
 const $send = document.getElementById("sendBtn");
 const $reset = document.getElementById("resetBtn");
 
@@ -44,13 +44,11 @@ function log(line) {
  * - Getting started in browser: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/getting-started-browser.html
  */
 AWS.config.region = REGION;
-AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-  IdentityPoolId: IDENTITY_POOL_ID
-});
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({ IdentityPoolId: IDENTITY_POOL_ID });
 
 // (Opcional) Log detallado de llamadas del SDK a la consola.
 // Útil para ver params/errores de cada request.
-AWS.config.logger = console; // :contentReference[oaicite:2]{index=2}
+AWS.config.logger = console; 
 
 /** 2) CLIENTES: Lex Runtime V2 + Polly */
 const lex = new AWS.LexRuntimeV2({ region: REGION });
@@ -59,12 +57,11 @@ const polly = new AWS.Polly({ region: REGION });
 /** 3) SESIONES EN LEX
  * --------------------
  * Mantener el mismo sessionId entre mensajes hace que el bot
- * "recuerde" slots/estado hasta que expire el timeout (por defecto 5 min,
- * configurable hasta 24h en el bot).
+ * "recuerde" slots/estado hasta que expire el timeout (por defecto 5 min, configurable hasta 24h en el bot).
  * - Managing sessions: https://docs.aws.amazon.com/lexv2/latest/dg/managing-sessions.html
  * - Session timeout: https://docs.aws.amazon.com/lexv2/latest/dg/context-mgmt-session-timeout.html
  */
-const SESSION_KEY = "lexSessionIdPlain";
+const SESSION_KEY = "lexSessionId";
 let sessionId = localStorage.getItem(SESSION_KEY);
 if (!sessionId) {
   sessionId = crypto.randomUUID();
@@ -93,9 +90,9 @@ async function sendToLex(text) {
     sessionId,   // MISMO sessionId en cada turno
     text
   };
-  const resp = await lex.recognizeText(params).promise(); // :contentReference[oaicite:3]{index=3}
-  const msgs = (resp.messages || []).map(m => m.content).join(" ");
-  return msgs || "(Sin respuesta del bot)";
+  const resp = await lex.recognizeText(params).promise(); 
+  const messages = (resp.messages || []).map(m => m.content).join(" ");
+  return messages || "(No tengo respuesta por ahora.)";
 }
 
 /** 5) SINTETIZAR VOZ CON POLLY (SynthesizeSpeech)
@@ -109,7 +106,7 @@ async function synthesizeAndPlay(text) {
   // Intentar con neural
   const base = { Text: text, OutputFormat: "mp3", VoiceId: VOICE_ID };
   try {
-    const data = await polly.synthesizeSpeech({ ...base, Engine: "neural" }).promise(); // :contentReference[oaicite:4]{index=4}
+    const data = await polly.synthesizeSpeech({ ...base, Engine: "neural" }).promise(); 
     return playAudio(data.AudioStream);
   } catch (e) {
     console.warn("Neural no disponible, usando estándar:", e.message);
@@ -129,15 +126,15 @@ function playAudio(audioStream) {
 
 /** 7) Flujo al pulsar Enviar */
 $send.addEventListener("click", async () => {
-  const text = $inp.value.trim();
+  const text = $input.value.trim();
   if (!text) return;
 
   log("Tú: " + text);
   $send.disabled = true;
-  $inp.disabled = true;
+  $input.disabled = true;
   try {
     // Asegura credenciales activas antes del request
-    await refreshCreds(); // :contentReference[oaicite:5]{index=5}
+    await refreshCreds(); 
 
     // 1) Texto -> Lex
     const reply = await sendToLex(text);
@@ -147,14 +144,16 @@ $send.addEventListener("click", async () => {
 
     // 3) Texto -> Voz (Polly)
     await synthesizeAndPlay(reply);
+
   } catch (e) {
     console.error(e);
     log("⚠️ Error: " + (e.message || "Fallo Lex/Polly"));
+
   } finally {
     $send.disabled = false;
-    $inp.disabled = false;
-    $inp.value = "";
-    $inp.focus();
+    $input.disabled = false;
+    $input.value = "";
+    $input.focus();
   }
 });
 
@@ -168,14 +167,4 @@ $reset.addEventListener("click", () => {
 });
 
 // Enfoca la caja de texto al cargar
-$inp.focus();
-
-/** (Opcional) DEPURACIÓN DE SESIÓN:
- * Puedes consultar el estado (slots/atributos) con GetSession:
- * https://docs.aws.amazon.com/lexv2/latest/dg/managing-sessions.html
- *
- * async function debugGetSession() {
- *   const s = await lex.getSession({ botAliasId: BOT_ALIAS_ID, botId: BOT_ID, localeId: LOCALE_ID, sessionId }).promise();
- *   console.log("Lex session:", s.sessionState);
- * }
- */
+$input.focus();

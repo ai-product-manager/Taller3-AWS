@@ -40,7 +40,7 @@ AWS.config.region = REGION;
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({ IdentityPoolId: IDENTITY_POOL_ID });
 
 // Log detallado a la consola (útil para depurar llamadas del SDK)
-AWS.config.logger = console; // :contentReference[oaicite:4]{index=4}
+AWS.config.logger = console; 
 
 const lex = new AWS.LexRuntimeV2({ region: REGION });
 const polly = new AWS.Polly({ region: REGION });
@@ -48,7 +48,9 @@ const polly = new AWS.Polly({ region: REGION });
 // Helpers de credenciales
 function clearCached() { AWS.config.credentials.clearCachedId?.(); }
 function refreshCreds() {
-  return new Promise((res, rej) => AWS.config.credentials.refresh(err => err ? rej(err) : res()));
+  return new Promise((res, rej) => 
+    AWS.config.credentials.refresh(err => err ? rej(err) : res())
+  );
 }
 
 // Llamada a Lex V2 — RecognizeText
@@ -57,55 +59,49 @@ async function sendToLex(text) {
     botAliasId: BOT_ALIAS_ID,
     botId: BOT_ID,
     localeId: LOCALE_ID,
-    sessionId,                  // persistente para mantener memoria
+    sessionId,      // MISMO sessionId en cada turno
     text
   };
-  const resp = await lex.recognizeText(params).promise(); // :contentReference[oaicite:5]{index=5}
+  const resp = await lex.recognizeText(params).promise(); 
   const messages = (resp.messages || []).map(m => m.content);
   return messages.join(" ") || "No tengo respuesta por ahora.";
 }
 
 // Voz con Polly
-async function speak(text) {
+async function synthesizeAndPlay(text) {
   if (!voiceToggle.checked) return;
-  const p = {
-    Text: text,
-    OutputFormat: "mp3",
-    VoiceId: VOICE_ID,
-    Engine: "neural"            // asegúrate de que la voz soporte neural en tu región
-  };
-  const data = await polly.synthesizeSpeech(p).promise();  
-  if (!data.AudioStream) return;
-  const blob = new Blob([data.AudioStream], { type: "audio/mpeg" });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  await audio.play();
+  const p = { Text: text, OutputFormat: "mp3", VoiceId: VOICE_ID };
+  try {
+    const data = await polly.synthesizeSpeech({ ...p, Engine: "neural" }).promise(); 
+    return playAudio(data.AudioStream);
+  } catch (e) {
+    console.warn("Neural no disponible, usando estándar:", e.message);
+    const data = await polly.synthesizeSpeech(p).promise();
+    return playAudio(data.AudioStream);
+  }
 }
 
-// (Opcional) inspeccionar la sesión actual en Lex
-async function debugGetSession() {
-  try {
-    const s = await lex.getSession({
-      botAliasId: BOT_ALIAS_ID, botId: BOT_ID, localeId: LOCALE_ID, sessionId
-    }).promise(); // :contentReference[oaicite:7]{index=7}
-    console.log("Lex session state:", s.sessionState);
-  } catch (e) {
-    console.warn("GetSession failed:", e);
-  }
+// Reproduce el AudioStream (ArrayBuffer) 
+function playAudio(audioStream) {
+  if (!audioStream) return;
+  const blob = new Blob([audioStream], { type: "audio/mpeg" });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  return audio.play();
 }
 
 // Eventos UI
 sendBtn.addEventListener("click", async () => {
   const text = input.value.trim();
   if (!text) return;
+  
   addMsg(text, "me");
   setBusy(true);
   try {
     await refreshCreds();
     const reply = await sendToLex(text);
     addMsg(reply, "bot");
-    await speak(reply);
-    // debugGetSession(); // descomenta si quieres ver estado en consola
+    await synthesizeAndPlay(reply);
   } catch (e) {
     console.error(e);
     addMsg("⚠️ Error: " + (e.message || "Fallo al llamar Lex/Polly"), "bot");
