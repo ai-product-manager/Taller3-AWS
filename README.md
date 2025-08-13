@@ -9,7 +9,7 @@
   - Finaliza la importación y espera a que aparezca el bot. 
 
 # Crear/ajustar DynamoDB
-- Abre DynamoDB → Tables → Create table (p.ej. TallerReservas con PK pk, SK sk).
+- Abre DynamoDB → Tables → Create table (p.ej. WorkshopAppointments con PK pk, SK sk)  usando Single-Table Design.
 - Semilla: horarios/servicios (pk: INFO, sk: HOURS) y pruebas de citas.
 - Verifica que el IAM role de tu Lambda tenga dynamodb:GetItem/PutItem/Query.
 
