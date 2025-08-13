@@ -39,12 +39,21 @@
 
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    { "Effect": "Allow", "Action": "lex:RecognizeText",
-      "Resource": "arn:aws:lex:us-east-1:TU_CUENTA:bot-alias/TU_BOT_ID/TU_ALIAS_ID" },
-    { "Effect": "Allow", "Action": "polly:SynthesizeSpeech", "Resource": "*" }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowRecognizeTextOnSpecificAlias",
+            "Effect": "Allow",
+            "Action": "lex:RecognizeText",
+            "Resource": "arn:aws:lex:us-east-1:TU_CUENTA:bot-alias/TU_BOT_ID/TU_ALIAS_ID"
+        },
+        {
+            "Sid": "AllowPollyTTS",
+            "Effect": "Allow",
+            "Action": "polly:SynthesizeSpeech",
+            "Resource": "*"
+        }
+    ]
 }
 ```
 
