@@ -6,8 +6,8 @@
 // /*********** CONFIG — REEMPLAZA ESTOS VALORES ***********/
 // const REGION = "us-east-1";                      // Tu región AWS
 // const IDENTITY_POOL_ID = "us-east-1:xxxx-....";  // Cognito Identity Pool (guest)
-// const BOT_ID = "XXXXXXXXXX";                     // Lex V2 Bot ID
-// const BOT_ALIAS_ID = "YYYYYYYYYY";               // Lex V2 Bot Alias ID (publicado)
+// const BOT_ID = "XXXXXXXXXX";                     // Lex V2 bot ID
+// const BOT_ALIAS_ID = "YYYYYYYYYY";               // Lex V2 bot Alias ID (publicado)
 // const LOCALE_ID = "es_419";                      // Locale del alias (Español LatAm)
 // const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
 // /*******************************************************/
@@ -15,7 +15,7 @@
 /*********** CONFIGURACIÓN — REEMPLAZA ESTOS VALORES ***********/
 const REGION = "us-east-1";                        // Reemplaza con tu región
 const IDENTITY_POOL_ID = "us-east-1:4c3eabb2-8fa4-4973-ad0e-f6066965290a"; // Identity Pool ID (acceso guest)
-const BOT_ID = "DCOKIVRC7V";                       // Bot ID (~10 caracteres)
+const BOT_ID = "DCOKIVRC7V";                       // bot ID (~10 caracteres)
 const BOT_ALIAS_ID = "HO9WEHV6MC";                 // Alias ID (como se ve en consola)
 const LOCALE_ID = "es_419";                        // Español LatAM (coincide con tu bot)
 const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
@@ -27,7 +27,7 @@ const $send = document.getElementById("sendBtn");
 const $reset = document.getElementById("resetBtn");
 
 /** Utilidad: imprime texto simple en el "log" */
-function log(line) {
+function addMsg(line) {
   const div = document.createElement("div");
   div.textContent = line;
   $log.appendChild(div);
@@ -67,7 +67,7 @@ if (!sessionId) {
   sessionId = crypto.randomUUID();
   localStorage.setItem(SESSION_KEY, sessionId);
 }
-log("Session ID: " + sessionId);
+addMsg("Session ID: " + sessionId);
 
 /** Helper: renovar credenciales (tras cambios de IAM/políticas) */
 function refreshCreds() {
@@ -129,7 +129,7 @@ $send.addEventListener("click", async () => {
   const text = $input.value.trim();
   if (!text) return;
 
-  log("Tú: " + text);
+  addMsg("me: " + text);
   $send.disabled = true;
   $input.disabled = true;
   try {
@@ -140,14 +140,14 @@ $send.addEventListener("click", async () => {
     const reply = await sendToLex(text);
 
     // 2) Mostrar respuesta
-    log("Bot: " + reply);
+    addMsg("bot: " + reply);
 
     // 3) Texto -> Voz (Polly)
     await synthesizeAndPlay(reply);
 
   } catch (e) {
     console.error(e);
-    log("⚠️ Error: " + (e.message || "Fallo Lex/Polly"));
+    addMsg("⚠️ Error: " + (e.message || "Fallo Lex/Polly"));
 
   } finally {
     $send.disabled = false;
@@ -163,7 +163,7 @@ $reset.addEventListener("click", () => {
   localStorage.removeItem(SESSION_KEY);
   sessionId = crypto.randomUUID();
   localStorage.setItem(SESSION_KEY, sessionId);
-  log("🔄 Nueva sesión: " + sessionId);
+  addMsg("🔄 Nueva sesión: " + sessionId);
 });
 
 // Enfoca la caja de texto al cargar
