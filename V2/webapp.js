@@ -3,8 +3,8 @@ AWS.config.logger = console;
 /*********** CONFIGURACIÓN — REEMPLAZA ESTOS VALORES ***********/
 const REGION = "us-east-1";                        // Reemplaza con tu región
 const IDENTITY_POOL_ID = "us-east-1:4c3eabb2-8fa4-4973-ad0e-f6066965290a"; // Identity Pool ID (acceso guest)
-const BOT_ID = "DCOKIVRC7V";                       // Bot ID (~10 caracteres)
-const BOT_ALIAS_ID = "HO9WEHV6MC";                 // Alias ID (como se ve en consola)
+const BOT_ID = "00WHAOPFCK";                       // Bot ID (~10 caracteres)
+const BOT_ALIAS_ID = "FUTBGU2HTA";                 // Alias ID (como se ve en consola)
 const LOCALE_ID = "es_419";                        // Español LatAM (coincide con tu bot)
 const VOICE_ID = "Mia";                          // Voz LatAm (es-MX). Alternativas: "Andrés", "Lupe", etc.
 /***************************************************************/

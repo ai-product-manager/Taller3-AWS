@@ -1,0 +1,23 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "BedrockKnowledgeBaseReadWritePolicy",
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:RetrieveAndGenerate",
+                "bedrock:Retrieve"
+            ],
+            "Resource": [
+                "arn:aws:bedrock:us-east-1:654654520205:knowledge-base/CQMYDFZNL6",
+                "arn:aws:bedrock:us-east-1:654654520205:knowledge-base/NVUAUK2MOL",
+                "arn:aws:bedrock:us-east-1:654654520205:knowledge-base/knowledge-base-quick-start-4ju7i"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "aws:ResourceAccount": "654654520205"
+                }
+            }
+        }
+    ]
+}
