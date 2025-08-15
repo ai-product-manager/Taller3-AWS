@@ -1,0 +1,54 @@
+openapi: 3.0.1
+info:
+  title: Weather Actions
+  version: "1.0"
+paths:
+  /weather/current:
+    get:
+      operationId: getCurrentWeather
+      description: Obtiene el clima actual por ciudad o por lat/lon usando Open-Meteo.
+      parameters:
+        - in: query
+          name: city
+          schema: { type: string }
+          description: Nombre de la ciudad (ej. "Lima")
+        - in: query
+          name: latitude
+          schema: { type: number }
+          description: Latitud en grados decimales
+        - in: query
+          name: longitude
+          schema: { type: number }
+          description: Longitud en grados decimales
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  message: { type: string }
+                  location:
+                    type: object
+                    properties:
+                      city: { type: string }
+                      latitude: { type: number }
+                      longitude: { type: number }
+                      timezone: { type: string }
+                  current:
+                    type: object
+                    properties:
+                      temperature_c: { type: number }
+                      feels_like_c: { type: number }
+                      precipitation_mm: { type: number }
+                      wind_speed_10m_kmh: { type: number }
+                      weather_code: { type: integer }
+                      description_es: { type: string }
+                      is_day: { type: boolean }
+                      time: { type: string }
+        "4XX":
+          description: Error de entrada
+        "5XX":
+          description: Error externo
